@@ -2,139 +2,270 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Bầu Cua Hồ Lô Đỏ - CRYPTO RANDOM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bầu Cua Hồ Lô Đỏ - Multiplayer & Crypto Random</title>
     <style>
-        :root { --red: #d90429; --gold: #ef233c; --dark: #2b2d42; }
-        body { background: #1a1a1d; color: white; font-family: sans-serif; text-align: center; }
-        .dice-stage { display: flex; justify-content: center; gap: 20px; height: 150px; margin: 20px; }
-        .dice { 
-            width: 80px; height: 80px; background: white; border-radius: 15px;
-            display: flex; align-items: center; justify-content: center; font-size: 50px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5); opacity: 0;
+        :root {
+            --red-holo: #e63946;
+            --gold: #ffb703;
+            --bg: #1a1a1d;
         }
-        .dropping { animation: drop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        @keyframes drop {
-            0% { transform: translateY(-400px) rotate(0deg); opacity: 0; }
-            100% { transform: translateY(0) rotate(720deg); opacity: 1; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
         }
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 500px; margin: auto; gap: 10px; }
-        .slot { background: #3d3d40; padding: 15px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
-        .slot:hover { border-color: gold; }
-        .holo { color: red; font-weight: bold; }
-        button { background: gold; padding: 15px 40px; font-weight: bold; border-radius: 30px; cursor: pointer; margin: 20px; border: none; }
-        button:disabled { background: #555; }
-        #balance { color: #00ff00; font-size: 1.5em; }
+
+        /* --- STAGE XÚC XẮC --- */
+        .dice-stage {
+            perspective: 1200px;
+            display: flex;
+            gap: 30px;
+            height: 200px;
+            align-items: flex-end;
+            margin-bottom: 40px;
+        }
+
+        .dice {
+            width: 90px;
+            height: 90px;
+            background: white;
+            color: #333;
+            font-size: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform-style: preserve-3d;
+        }
+
+        /* Hiệu ứng rơi vật lý */
+        @keyframes dropPhysical {
+            0% { transform: translateY(-600px) rotateX(0deg) rotateY(0deg); opacity: 0; }
+            50% { opacity: 1; }
+            70% { transform: translateY(0) rotateX(450deg) rotateY(225deg); }
+            85% { transform: translateY(-40px) rotateX(540deg) rotateY(315deg); }
+            100% { transform: translateY(0) rotateX(720deg) rotateY(360deg); opacity: 1; }
+        }
+
+        .dropping { animation: dropPhysical 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        /* --- BÀN CƯỢC --- */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .cell {
+            background: #2d2d30;
+            border: 2px solid #444;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            text-align: center;
+        }
+
+        .cell:hover { border-color: var(--gold); background: #3d3d40; }
+        
+        .holo-red { color: #ff0000; filter: drop-shadow(0 0 8px rgba(255,0,0,0.4)); font-weight: bold; }
+        .icon { font-size: 50px; display: block; margin-bottom: 8px; }
+        .bet-tag { color: var(--gold); font-weight: bold; font-size: 1.1em; margin-top: 5px; display: block;}
+
+        /* --- BUTTON & LOG --- */
+        #roll-btn {
+            background: linear-gradient(to bottom, #ffd700, #b8860b);
+            border: none;
+            padding: 18px 60px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 50px;
+            margin: 30px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            transition: 0.2s;
+        }
+
+        #roll-btn:active { transform: translateY(3px); box-shadow: none; }
+        #roll-btn:disabled { filter: grayscale(1); cursor: not-allowed; }
+
+        .log {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 0.95em;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
 
-    <h1>BẦU CUA CRYPTO-RANDOM</h1>
-    <div id="balance">Vốn ảo: 100,000 VNĐ</div>
+    <h1 style="color: #ffb703; text-transform: uppercase; letter-spacing: 2px;">Bầu Cua Hồ Lô Đỏ</h1>
 
-    <div class="dice-stage">
+    <div class="dice-stage" id="stage">
         <div class="dice" id="d1"></div>
         <div class="dice" id="d2"></div>
         <div class="dice" id="d3"></div>
     </div>
 
-    <div class="board" id="board"></div>
+    <div class="board" id="game-board"></div>
 
-    <button id="roll-btn" onclick="play()">ĐỔ XÍ NGẦU</button>
-    <div id="log" style="margin-top:20px; color:#aaa"></div>
+    <button id="roll-btn" onclick="startPlay()">ĐỔ XÍ NGẦU</button>
+
+    <div class="log">
+        <strong style="color: var(--gold);">Danh sách cược (10.000đ/lần click):</strong>
+        <div id="log-list" style="margin-top: 10px;">
+            <span style="color:#777">Chưa có ai đặt cược...</span>
+        </div>
+    </div>
 
 <script>
     const items = [
         { name: "Nai", icon: "🦌" },
-        { name: "Bầu", icon: "🏮", isRed: true },
+        { name: "Bầu", icon: "🏮", isHolo: true },
         { name: "Gà", icon: "🐔" },
         { name: "Cá", icon: "🐟" },
         { name: "Cua", icon: "🦀" },
         { name: "Tôm", icon: "🦐" }
     ];
 
-    let wallet = 100000;
-    let bets = [];
+    let playersBets = [];
+    const BET_AMOUNT = 10000;
 
+    // Khởi tạo bàn cược
     function init() {
-        const b = document.getElementById('board');
-        b.innerHTML = items.map((item, i) => `
-            <div class="slot" onclick="placeBet(${i})">
-                <div style="font-size:40px" class="${item.isRed ? 'holo' : ''}">${item.isRed ? '🏮' : item.icon}</div>
-                <div>${item.name}</div>
-                <div id="bet-${i}" style="color:gold">0</div>
+        const board = document.getElementById('game-board');
+        board.innerHTML = items.map((item, i) => `
+            <div class="cell" onclick="placeBet(${i})">
+                <span class="icon ${item.isHolo ? 'holo-red' : ''}">${item.isHolo ? '🏮' : item.icon}</span>
+                <strong>${item.name}</strong>
+                <span class="bet-tag" id="sum-${i}">0đ</span>
             </div>
         `).join('');
     }
 
-    function placeBet(i) {
-        if (wallet < 10000) return alert("Hết tiền rồi bạn ơi!");
-        wallet -= 10000;
-        bets.push({ name: "Bạn", idx: i, amt: 10000 });
-        updateUI();
+    // Xử lý khi click vào ô cược
+    function placeBet(idx) {
+        const name = prompt(`Bạn đang cược 10.000đ vào ${items[idx].name}.\nVui lòng nhập tên người cược:`, "Người chơi");
+        
+        if (name !== null && name.trim() !== "") {
+            playersBets.push({ 
+                name: name.trim(), 
+                itemIndex: idx, 
+                amount: BET_AMOUNT 
+            });
+            updateUI();
+        }
     }
 
+    // Cập nhật giao diện tiền và danh sách người cược
     function updateUI() {
-        document.getElementById('balance').innerText = `Vốn ảo: ${wallet.toLocaleString()} VNĐ`;
+        // Cập nhật tổng tiền từng ô
         items.forEach((_, i) => {
-            const sum = bets.filter(b => b.idx === i).reduce((a, b) => a + b.amt, 0);
-            document.getElementById(`bet-${i}`).innerText = sum.toLocaleString();
+            const total = playersBets.filter(b => b.itemIndex === i).reduce((sum, b) => sum + b.amount, 0);
+            document.getElementById(`sum-${i}`).innerText = total.toLocaleString() + "đ";
         });
+        
+        // Cập nhật log
+        const log = document.getElementById('log-list');
+        if (playersBets.length > 0) {
+            log.innerHTML = playersBets.map(b => 
+                `<div>• <b>${b.name}</b> đặt ${items[b.itemIndex].name}</div>`
+            ).reverse().join('');
+        } else {
+            log.innerHTML = `<span style="color:#777">Chưa có ai đặt cược...</span>`;
+        }
     }
 
-    // THUẬT TOÁN RANDOM THỰC THẾ (Dùng Crypto API)
+    // Thuật toán Crypto Random (Chống gian lận)
     function getSecureRandom() {
         const array = new Uint32Array(1);
         window.crypto.getRandomValues(array);
-        return array[0] % 6; // Lấy dư cho 6 mặt
+        return array[0] % 6; 
     }
 
-    function play() {
-        if (bets.length === 0) return alert("Đặt cược đã!");
+    // Đổ xí ngầu
+    function startPlay() {
+        if (playersBets.length === 0) {
+            alert("Vui lòng đặt cược trước khi đổ xí ngầu!");
+            return;
+        }
+
         const btn = document.getElementById('roll-btn');
         btn.disabled = true;
 
         const diceEls = [document.getElementById('d1'), document.getElementById('d2'), document.getElementById('d3')];
-        const results = [];
+        let results = [];
 
+        // Hiệu ứng rơi từng viên
         diceEls.forEach((el, i) => {
             el.classList.remove('dropping');
-            void el.offsetWidth;
+            void el.offsetWidth; // Reset animation
+
             setTimeout(() => {
                 const res = getSecureRandom();
                 results.push(res);
-                el.innerHTML = items[res].isRed ? '<span class="holo">🏮</span>' : items[res].icon;
+                
+                if (items[res].isHolo) {
+                    el.innerHTML = `<span class="holo-red">🏮</span>`;
+                } else {
+                    el.innerHTML = items[res].icon;
+                }
+                
                 el.classList.add('dropping');
-            }, i * 200);
+            }, i * 200); // Rơi lệch nhau 0.2s
         });
 
+        // Chờ hiệu ứng kết thúc rồi tính kết quả
         setTimeout(() => {
-            calculateMoney(results);
+            processWinners(results);
             btn.disabled = false;
         }, 1500);
     }
 
-    function calculateMoney(results) {
-        let winAmt = 0;
-        let logMsg = "Kết quả: " + results.map(r => items[r].name).join(" - ") + "<br>";
-
-        bets.forEach(bet => {
-            const matches = results.filter(r => r === bet.idx).length;
-            if (matches > 0) {
-                // Tiền thắng = Tiền gốc + (Tiền cược * số mặt xuất hiện)
-                const win = bet.amt + (bet.amt * matches);
-                winAmt += win;
+    // Tính toán người thắng/thua
+    function processWinners(results) {
+        let winReport = [];
+        
+        playersBets.forEach(bet => {
+            // Đếm số lần linh vật người này đặt xuất hiện trong kết quả
+            const matchCount = results.filter(r => r === bet.itemIndex).length;
+            
+            if (matchCount > 0) {
+                // Thắng = Lấy lại vốn + (Tiền cược * Số con trúng)
+                const winMoney = bet.amount + (bet.amount * matchCount);
+                winReport.push(`🎉 ${bet.name} nhận ${winMoney.toLocaleString()}đ (Trúng ${matchCount} ${items[bet.itemIndex].name})`);
             }
         });
 
-        wallet += winAmt;
-        if (winAmt > 0) {
-            logMsg += `<span style="color:lime">Bạn thắng ${winAmt.toLocaleString()}đ!</span>`;
+        // Hiển thị kết quả
+        let resultString = results.map(r => items[r].name).join(" - ");
+        
+        if (winReport.length > 0) {
+            alert(`KẾT QUẢ: ${resultString}\n\nDANH SÁCH TRÚNG THƯỞNG:\n${winReport.join("\n")}`);
         } else {
-            logMsg += `<span style="color:red">Bạn thua sạch ván này!</span>`;
+            alert(`KẾT QUẢ: ${resultString}\n\nRất tiếc, nhà cái ăn hết! Không có ai trúng.`);
         }
 
-        document.getElementById('log').innerHTML = logMsg;
-        bets = [];
+        // Xóa bàn làm ván mới
+        playersBets = [];
         updateUI();
     }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bầu Cua Hồ Lô Đỏ - Multiplayer & Crypto Random</title>
+    <title>Bầu Cua Hồ Lô Đỏ - Chuẩn Hình Ảnh</title>
     <style>
         :root {
             --red-holo: #e63946;
@@ -80,7 +80,18 @@
 
         .cell:hover { border-color: var(--gold); background: #3d3d40; }
         
-        .holo-red { color: #ff0000; filter: drop-shadow(0 0 8px rgba(255,0,0,0.4)); font-weight: bold; }
+        /* CSS cho icon Hồ Lô Đỏ */
+        .holo-icon {
+            font-size: 50px;
+            display: inline-block;
+            /* Tạo màu đỏ gradient cho giống hình bầu khô */
+            background: linear-gradient(to bottom right, #d00000, #8b0000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* Thêm bóng đỏ để làm nổi bật dải nơ */
+            filter: drop-shadow(2px 2px 3px rgba(255,0,0,0.7));
+        }
+
         .icon { font-size: 50px; display: block; margin-bottom: 8px; }
         .bet-tag { color: var(--gold); font-weight: bold; font-size: 1.1em; margin-top: 5px; display: block;}
 
@@ -139,7 +150,8 @@
 <script>
     const items = [
         { name: "Nai", icon: "🦌" },
-        { name: "Bầu", icon: "🏮", isHolo: true },
+        /* Icon này (🧧) có hình dáng thắt eo và nơ đỏ gần giống nhất */
+        { name: "Bầu", icon: "🧧", isHolo: true }, 
         { name: "Gà", icon: "🐔" },
         { name: "Cá", icon: "🐟" },
         { name: "Cua", icon: "🦀" },
@@ -149,19 +161,20 @@
     let playersBets = [];
     const BET_AMOUNT = 10000;
 
-    // Khởi tạo bàn cược
     function init() {
         const board = document.getElementById('game-board');
         board.innerHTML = items.map((item, i) => `
             <div class="cell" onclick="placeBet(${i})">
-                <span class="icon ${item.isHolo ? 'holo-red' : ''}">${item.isHolo ? '🏮' : item.icon}</span>
+                ${item.isHolo 
+                    ? `<span class="holo-icon">${item.icon}</span>` 
+                    : `<span class="icon">${item.icon}</span>`
+                }
                 <strong>${item.name}</strong>
                 <span class="bet-tag" id="sum-${i}">0đ</span>
             </div>
         `).join('');
     }
 
-    // Xử lý khi click vào ô cược
     function placeBet(idx) {
         const name = prompt(`Bạn đang cược 10.000đ vào ${items[idx].name}.\nVui lòng nhập tên người cược:`, "Người chơi");
         
@@ -175,15 +188,12 @@
         }
     }
 
-    // Cập nhật giao diện tiền và danh sách người cược
     function updateUI() {
-        // Cập nhật tổng tiền từng ô
         items.forEach((_, i) => {
             const total = playersBets.filter(b => b.itemIndex === i).reduce((sum, b) => sum + b.amount, 0);
             document.getElementById(`sum-${i}`).innerText = total.toLocaleString() + "đ";
         });
         
-        // Cập nhật log
         const log = document.getElementById('log-list');
         if (playersBets.length > 0) {
             log.innerHTML = playersBets.map(b => 
@@ -195,10 +205,10 @@
     }
 
     // Thuật toán Crypto Random (Chống gian lận)
-    function getSecureRandom() {
-        const array = new Uint32Array(1);
+    function getThreeSecureRandoms() {
+        const array = new Uint32Array(3);
         window.crypto.getRandomValues(array);
-        return array[0] % 6; 
+        return [array[0] % 6, array[1] % 6, array[2] % 6];
     }
 
     // Đổ xí ngầu
@@ -212,30 +222,28 @@
         btn.disabled = true;
 
         const diceEls = [document.getElementById('d1'), document.getElementById('d2'), document.getElementById('d3')];
-        let results = [];
+        
+        const finalResults = getThreeSecureRandoms();
 
-        // Hiệu ứng rơi từng viên
         diceEls.forEach((el, i) => {
             el.classList.remove('dropping');
-            void el.offsetWidth; // Reset animation
+            void el.offsetWidth; 
 
             setTimeout(() => {
-                const res = getSecureRandom();
-                results.push(res);
+                const res = finalResults[i];
                 
                 if (items[res].isHolo) {
-                    el.innerHTML = `<span class="holo-red">🏮</span>`;
+                    el.innerHTML = `<span class="holo-icon">${items[res].icon}</span>`;
                 } else {
-                    el.innerHTML = items[res].icon;
+                    el.innerHTML = `<span class="icon">${items[res].icon}</span>`;
                 }
                 
                 el.classList.add('dropping');
-            }, i * 200); // Rơi lệch nhau 0.2s
+            }, i * 200); 
         });
 
-        // Chờ hiệu ứng kết thúc rồi tính kết quả
         setTimeout(() => {
-            processWinners(results);
+            processWinners(finalResults);
             btn.disabled = false;
         }, 1500);
     }
@@ -245,17 +253,13 @@
         let winReport = [];
         
         playersBets.forEach(bet => {
-            // Đếm số lần linh vật người này đặt xuất hiện trong kết quả
             const matchCount = results.filter(r => r === bet.itemIndex).length;
-            
             if (matchCount > 0) {
-                // Thắng = Lấy lại vốn + (Tiền cược * Số con trúng)
                 const winMoney = bet.amount + (bet.amount * matchCount);
                 winReport.push(`🎉 ${bet.name} nhận ${winMoney.toLocaleString()}đ (Trúng ${matchCount} ${items[bet.itemIndex].name})`);
             }
         });
 
-        // Hiển thị kết quả
         let resultString = results.map(r => items[r].name).join(" - ");
         
         if (winReport.length > 0) {
@@ -264,7 +268,6 @@
             alert(`KẾT QUẢ: ${resultString}\n\nRất tiếc, nhà cái ăn hết! Không có ai trúng.`);
         }
 
-        // Xóa bàn làm ván mới
         playersBets = [];
         updateUI();
     }

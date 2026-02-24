@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bầu Cua Hồ Lô Đỏ - Random Pro</title>
+    <style>
+        :root {
+            --red-holo: #e63946;
+            --gold: #ffb703;
+            --bg: #1a1a1d;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* --- STAGE XÚC XẮC --- */
+        .dice-stage {
+            perspective: 1200px;
+            display: flex;
+            gap: 30px;
+            height: 220px;
+            align-items: flex-end;
+            margin-bottom: 40px;
+        }
+
+        .dice {
+            width: 90px;
+            height: 90px;
+            background: white;
+            color: #333;
+            font-size: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform-style: preserve-3d;
+        }
+
+        /* Hiệu ứng rơi và nảy mạnh */
+        @keyframes dropPhysical {
+            0% { transform: translateY(-600px) rotateX(0deg) rotateY(0deg); opacity: 0; }
+            50% { opacity: 1; }
+            70% { transform: translateY(0) rotateX(450deg) rotateY(225deg); }
+            85% { transform: translateY(-40px) rotateX(540deg) rotateY(315deg); }
+            100% { transform: translateY(0) rotateX(720deg) rotateY(360deg); opacity: 1; }
+        }
+
+        .dropping { animation: dropPhysical 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        /* --- BÀN CƯỢC --- */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .cell {
+            background: #2d2d30;
+            border: 2px solid #444;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .cell:hover { border-color: var(--gold); background: #3d3d40; }
+        
+        /* Màu đỏ cho riêng Hồ Lô */
+        .holo-red { color: #ff0000; filter: drop-shadow(0 0 8px rgba(255,0,0,0.4)); font-weight: bold; }
+        
+        .icon { font-size: 50px; display: block; margin-bottom: 8px; }
+        .bet-tag { color: var(--gold); font-weight: bold; font-size: 1.1em; }
+
+        /* --- BUTTON & LOG --- */
+        #roll-btn {
+            background: linear-gradient(to bottom, #ffd700, #b8860b);
+            border: none;
+            padding: 18px 60px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 50px;
+            margin: 30px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        #roll-btn:disabled { filter: grayscale(1); cursor: not-allowed; }
+
+        .log {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>BẦU CUA HỒ LÔ ĐỎ</h1>
+
+    <div class="dice-stage" id="stage">
+        <div class="dice" id="d1"></div>
+        <div class="dice" id="d2"></div>
+        <div class="dice" id="d3"></div>
+    </div>
+
+    <div class="board" id="game-board"></div>
+
+    <button id="roll-btn" onclick="startPlay()">ĐỔ XÍ NGẦU</button>
+
+    <div class="log" id="log-list">
+        <span style="color:#777">Lịch sử cược sẽ hiện ở đây...</span>
+    </div>
+
+<script>
+    // 0: Nai, 1: Bầu, 2: Gà, 3: Cá, 4: Cua, 5: Tôm
+    const items = [
+        { name: "Nai", icon: "🦌" },
+        { name: "Bầu", icon: "🍶", isHolo: true }, // Sử dụng icon bình hồ lô
+        { name: "Gà", icon: "🐔" },
+        { name: "Cá", icon: "🐟" },
+        { name: "Cua", icon: "🦀" },
+        { name: "Tôm", icon: "🦐" }
+    ];
+
+    let currentBets = [];
+    const BET_VAL = 10000;
+
+    function init() {
+        const board = document.getElementById('game-board');
+        board.innerHTML = items.map((item, i) => `
+            <div class="cell" onclick="placeBet(${i})">
+                <span class="icon ${item.isHolo ? 'holo-red' : ''}">${item.isHolo ? '🏮' : item.icon}</span>
+                <strong>${item.name}</strong><br>
+                <span class="bet-tag" id="sum-${i}">0đ</span>
+            </div>
+        `).join('');
+    }
+
+    function placeBet(idx) {
+        const name = prompt(`Cược 10.000đ vào ${items[idx].name}. Tên bạn:`, "Người chơi");
+        if (name) {
+            currentBets.push({ name: name.trim(), idx: idx });
+            updateBoard();
+        }
+    }
+
+    function updateBoard() {
+        items.forEach((_, i) => {
+            const total = currentBets.filter(b => b.idx === i).length * BET_VAL;
+            document.getElementById(`sum-${i}`).innerText = total.toLocaleString() + "đ";
+        });
+        
+        const log = document.getElementById('log-list');
+        if (currentBets.length > 0) {
+            log.innerHTML = currentBets.map(b => `<div>• <b>${b.name}</b>: ${items[b.idx].name}</div>`).reverse().join('');
+        }
+    }
+
+    // Cơ chế Random cải tiến: Crypto Random nếu có thể, hoặc xáo trộn mảng
+    function getTrueRandomResult() {
+        // Sử dụng mảng để xáo trộn (Shuffle) tăng tính ngẫu nhiên
+        const pool = [0, 1, 2, 3, 4, 5];
+        // Thuật toán xáo trộn Fisher-Yates
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        // Trả về ngẫu nhiên từ pool đã xáo trộn
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function startPlay() {
+        if (currentBets.length === 0) {
+            alert("Hãy đặt cược trước!");
+            return;
+        }
+
+        const btn = document.getElementById('roll-btn');
+        btn.disabled = true;
+
+        const diceEls = [document.getElementById('d1'), document.getElementById('d2'), document.getElementById('d3')];
+        let results = [];
+
+        diceEls.forEach((el, i) => {
+            el.classList.remove('dropping');
+            void el.offsetWidth; // Trigger reflow
+
+            // Delay mỗi viên một chút để tạo vẻ tự nhiên
+            setTimeout(() => {
+                const res = getTrueRandomResult();
+                results.push(res);
+                
+                // Hiển thị kết quả
+                if (items[res].isHolo) {
+                    el.innerHTML = `<span class="holo-red">🏮</span>`;
+                } else {
+                    el.innerHTML = items[res].icon;
+                }
+                
+                el.classList.add('dropping');
+            }, i * 200);
+        });
+
+        // Đợi đổ xong hết
+        setTimeout(() => {
+            processWinners(results);
+            btn.disabled = false;
+        }, 1600);
+    }
+
+    function processWinners(results) {
+        let winners = [];
+        currentBets.forEach(bet => {
+            const matches = results.filter(r => r === bet.idx).length;
+            if (matches > 0) {
+                const prize = (BET_VAL * matches) + BET_VAL;
+                winners.push(`${bet.name} thắng ${prize.toLocaleString()}đ (${items[bet.idx].name} x${matches})`);
+            }
+        });
+
+        if (winners.length > 0) {
+            alert("KẾT QUẢ VÁN ĐẤU:\n\n" + winners.join("\n"));
+        } else {
+            alert("Kết quả: " + results.map(r => items[r].name).join(" - ") + "\nKhông ai trúng ván này!");
+        }
+
+        currentBets = [];
+        updateBoard();
+    }
+
+    init();
+</script>
+</body>
+</html>

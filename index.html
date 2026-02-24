@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bầu Cua Hồ Lô Đỏ - Chuẩn Hình Ảnh</title>
+    <title>Bầu Cua Hồ Lô Đỏ - 18 Bits Crypto Edition</title>
     <style>
         :root {
             --red-holo: #e63946;
@@ -12,7 +12,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
             color: white;
             display: flex;
@@ -22,7 +22,15 @@
             padding: 20px;
         }
 
-        /* --- STAGE XÚC XẮC --- */
+        h1 {
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* --- KHU VỰC ĐỔ XÚC XẮC --- */
         .dice-stage {
             perspective: 1200px;
             display: flex;
@@ -47,7 +55,7 @@
             transform-style: preserve-3d;
         }
 
-        /* Hiệu ứng rơi vật lý */
+        /* Hiệu ứng rơi vật lý có nảy */
         @keyframes dropPhysical {
             0% { transform: translateY(-600px) rotateX(0deg) rotateY(0deg); opacity: 0; }
             50% { opacity: 1; }
@@ -56,7 +64,9 @@
             100% { transform: translateY(0) rotateX(720deg) rotateY(360deg); opacity: 1; }
         }
 
-        .dropping { animation: dropPhysical 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        .dropping { 
+            animation: dropPhysical 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; 
+        }
 
         /* --- BÀN CƯỢC --- */
         .board {
@@ -76,26 +86,40 @@
             transition: 0.3s;
             position: relative;
             text-align: center;
+            user-select: none; /* Tránh bôi đen text khi click nhanh */
         }
 
-        .cell:hover { border-color: var(--gold); background: #3d3d40; }
+        .cell:hover { 
+            border-color: var(--gold); 
+            background: #3d3d40; 
+            transform: translateY(-2px);
+        }
         
         /* CSS cho icon Hồ Lô Đỏ */
         .holo-icon {
-            font-size: 50px;
+            font-size: 55px;
             display: inline-block;
-            /* Tạo màu đỏ gradient cho giống hình bầu khô */
-            background: linear-gradient(to bottom right, #d00000, #8b0000);
+            background: linear-gradient(to bottom right, #ff0000, #8b0000);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            /* Thêm bóng đỏ để làm nổi bật dải nơ */
-            filter: drop-shadow(2px 2px 3px rgba(255,0,0,0.7));
+            filter: drop-shadow(2px 2px 5px rgba(255,0,0,0.6));
         }
 
-        .icon { font-size: 50px; display: block; margin-bottom: 8px; }
-        .bet-tag { color: var(--gold); font-weight: bold; font-size: 1.1em; margin-top: 5px; display: block;}
+        .icon { 
+            font-size: 50px; 
+            display: block; 
+            margin-bottom: 8px; 
+        }
 
-        /* --- BUTTON & LOG --- */
+        .bet-tag { 
+            color: var(--gold); 
+            font-weight: bold; 
+            font-size: 1.1em; 
+            margin-top: 5px; 
+            display: block;
+        }
+
+        /* --- NÚT BẤM & LỊCH SỬ CƯỢC --- */
         #roll-btn {
             background: linear-gradient(to bottom, #ffd700, #b8860b);
             border: none;
@@ -107,10 +131,20 @@
             cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
             transition: 0.2s;
+            color: #000;
         }
 
-        #roll-btn:active { transform: translateY(3px); box-shadow: none; }
-        #roll-btn:disabled { filter: grayscale(1); cursor: not-allowed; }
+        #roll-btn:active { 
+            transform: translateY(4px); 
+            box-shadow: none; 
+        }
+
+        #roll-btn:disabled { 
+            background: #555;
+            color: #888;
+            cursor: not-allowed; 
+            box-shadow: none;
+        }
 
         .log {
             width: 100%;
@@ -123,12 +157,18 @@
             line-height: 1.6;
             max-height: 200px;
             overflow-y: auto;
+            border-left: 4px solid var(--gold);
+        }
+
+        .log-item {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 4px 0;
         }
     </style>
 </head>
 <body>
 
-    <h1 style="color: #ffb703; text-transform: uppercase; letter-spacing: 2px;">Bầu Cua Hồ Lô Đỏ</h1>
+    <h1>Bầu Cua Hồ Lô Đỏ</h1>
 
     <div class="dice-stage" id="stage">
         <div class="dice" id="d1"></div>
@@ -148,9 +188,9 @@
     </div>
 
 <script>
+    // Định nghĩa linh vật (Sử dụng icon 🧧 làm Hồ Lô vì nó có màu đỏ và dải nơ thắt)
     const items = [
         { name: "Nai", icon: "🦌" },
-        /* Icon này (🧧) có hình dáng thắt eo và nơ đỏ gần giống nhất */
         { name: "Bầu", icon: "🧧", isHolo: true }, 
         { name: "Gà", icon: "🐔" },
         { name: "Cá", icon: "🐟" },
@@ -161,12 +201,13 @@
     let playersBets = [];
     const BET_AMOUNT = 10000;
 
+    // 1. Khởi tạo bàn chơi
     function init() {
         const board = document.getElementById('game-board');
         board.innerHTML = items.map((item, i) => `
             <div class="cell" onclick="placeBet(${i})">
                 ${item.isHolo 
-                    ? `<span class="holo-icon">${item.icon}</span>` 
+                    ? `<span class="icon holo-icon">${item.icon}</span>` 
                     : `<span class="icon">${item.icon}</span>`
                 }
                 <strong>${item.name}</strong>
@@ -175,6 +216,7 @@
         `).join('');
     }
 
+    // 2. Xử lý khi người chơi click vào ô linh vật
     function placeBet(idx) {
         const name = prompt(`Bạn đang cược 10.000đ vào ${items[idx].name}.\nVui lòng nhập tên người cược:`, "Người chơi");
         
@@ -188,30 +230,61 @@
         }
     }
 
+    // 3. Cập nhật giao diện tiền cược và lịch sử
     function updateUI() {
+        // Cập nhật tổng tiền từng ô
         items.forEach((_, i) => {
             const total = playersBets.filter(b => b.itemIndex === i).reduce((sum, b) => sum + b.amount, 0);
             document.getElementById(`sum-${i}`).innerText = total.toLocaleString() + "đ";
         });
         
+        // Cập nhật log
         const log = document.getElementById('log-list');
         if (playersBets.length > 0) {
             log.innerHTML = playersBets.map(b => 
-                `<div>• <b>${b.name}</b> đặt ${items[b.itemIndex].name}</div>`
+                `<div class="log-item">• <b>${b.name}</b> đặt ${items[b.itemIndex].name}</div>`
             ).reverse().join('');
         } else {
             log.innerHTML = `<span style="color:#777">Chưa có ai đặt cược...</span>`;
         }
     }
 
-    // Thuật toán Crypto Random (Chống gian lận)
+    // ==========================================
+    // LÕI RANDOM BITWISE 18 BITS CỦA BẠN (CỰC KỲ "XANH CHÍN")
+    // ==========================================
     function getThreeSecureRandoms() {
-        const array = new Uint32Array(3);
-        window.crypto.getRandomValues(array);
-        return [array[0] % 6, array[1] % 6, array[2] % 6];
+        const array = new Uint32Array(1);
+        let d1, d2, d3;
+
+        while (true) {
+            // Sinh 1 số 32-bit từ hardware noise
+            window.crypto.getRandomValues(array);
+            
+            // Mask lấy đúng 18 bits cuối
+            const num18bits = array[0] & 0x3FFFF; 
+
+            // Cắt ra thành 3 cụm, mỗi cụm 6 bits
+            const val1 = num18bits & 0x3F;
+            const val2 = (num18bits >> 6) & 0x3F;
+            const val3 = (num18bits >> 12) & 0x3F;
+
+            // Rejection Sampling: Loại bỏ 60, 61, 62, 63 để chống modulo bias
+            if (val1 >= 60 || val2 >= 60 || val3 >= 60) {
+                continue; 
+            }
+
+            // Trả về số từ 0 đến 5 an toàn tuyệt đối
+            d1 = val1 % 6;
+            d2 = val2 % 6;
+            d3 = val3 % 6;
+            
+            break;
+        }
+
+        return [d1, d2, d3];
     }
 
-    // Đổ xí ngầu
+    // 4. Bắt đầu đổ xí ngầu
     function startPlay() {
         if (playersBets.length === 0) {
             alert("Vui lòng đặt cược trước khi đổ xí ngầu!");
@@ -223,38 +296,44 @@
 
         const diceEls = [document.getElementById('d1'), document.getElementById('d2'), document.getElementById('d3')];
         
+        // Chốt kết quả ngẫu nhiên trước bằng hàm 18-bits
         const finalResults = getThreeSecureRandoms();
 
+        // Chạy hiệu ứng đổ xúc xắc
         diceEls.forEach((el, i) => {
             el.classList.remove('dropping');
-            void el.offsetWidth; 
+            void el.offsetWidth; // Force reflow để restart animation
 
             setTimeout(() => {
                 const res = finalResults[i];
                 
+                // Hiển thị icon tương ứng (Hồ lô đỏ có CSS riêng)
                 if (items[res].isHolo) {
                     el.innerHTML = `<span class="holo-icon">${items[res].icon}</span>`;
                 } else {
-                    el.innerHTML = `<span class="icon">${items[res].icon}</span>`;
+                    el.innerHTML = `<span>${items[res].icon}</span>`;
                 }
                 
                 el.classList.add('dropping');
-            }, i * 200); 
+            }, i * 200); // Rơi lệch nhau 0.2 giây tạo độ tự nhiên
         });
 
+        // Chờ hiệu ứng kết thúc rồi mới tính tiền (1.5s)
         setTimeout(() => {
             processWinners(finalResults);
             btn.disabled = false;
         }, 1500);
     }
 
-    // Tính toán người thắng/thua
+    // 5. Tính toán tiền thưởng
     function processWinners(results) {
         let winReport = [];
         
         playersBets.forEach(bet => {
             const matchCount = results.filter(r => r === bet.itemIndex).length;
+            
             if (matchCount > 0) {
+                // Tiền thắng = Vốn + (Vốn * Số lần linh vật xuất hiện)
                 const winMoney = bet.amount + (bet.amount * matchCount);
                 winReport.push(`🎉 ${bet.name} nhận ${winMoney.toLocaleString()}đ (Trúng ${matchCount} ${items[bet.itemIndex].name})`);
             }
@@ -268,10 +347,12 @@
             alert(`KẾT QUẢ: ${resultString}\n\nRất tiếc, nhà cái ăn hết! Không có ai trúng.`);
         }
 
+        // Xóa sạch cược cũ trên bàn
         playersBets = [];
         updateUI();
     }
 
+    // Chạy khởi tạo khi load trang
     init();
 </script>
 </body>
